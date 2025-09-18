@@ -1,6 +1,6 @@
 {
   "name": "@apihub24/ts_dependency_injection",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,8 @@
     "clean": "rimraf dist",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "release": "npm run build && npm run test && npm publish"
   },
   "dependencies": {
     "reflect-metadata": "^0.2.2"
