@@ -20,18 +20,42 @@ function registerCreator<T>(
 }
 
 
+/**
+ * Service decorator function to register a concrete class for dependency injection.
+ * This function associates a given class (constructor) with a specific key for later retrieval.
+ *
+ * @param {string} key The unique identifier for the associated concrete class. Defaults to a global identifier.
+ * @return {Function} A decorator function that registers a concrete class using the specified key.
+ */
 export function Service<T>(key: string = globalIdentifier) {
     return function (concreteCreator: Constructor<T>) {
         registerCreator(concreteCreator, concreteCreator, key, key === globalIdentifier);
     }
 }
 
+/**
+ * Registers a concrete class implementation for a given abstract class type with an optional key.
+ *
+ * @template T the Type of the Service Class to Register
+ * @param {AbstractConstructor<T>} abstractTarget - The abstract class type to register.
+ * @param {string} [key=globalIdentifier] - Optional identifier key for the registration. Defaults to a global identifier.
+ * @return {Function} A function that associates the abstract type with a concrete class implementation.
+ */
 export function ServiceFor<T>(abstractTarget: AbstractConstructor<T>, key: string = globalIdentifier) {
     return function (concreteCreator: Constructor<T>) {
         registerCreator(abstractTarget, concreteCreator, key, key === globalIdentifier);
     }
 }
 
+/**
+ * Resolves and provides an instance of the specified dependency based on the given key.
+ * Throws an error if the dependency is not registered for the provided key.
+ *
+ * @template T the Type of the Service Class to Register
+ * @param {DependencyKey<T>} target - The dependency key used to look up the registration.
+ * @param {string} [key=globalIdentifier] - The identifier for the dependency context. Defaults to `globalIdentifier`.
+ * @return {T} An instance of the resolved dependency.
+ */
 export function inject<T>(target: DependencyKey<T>, key: string = globalIdentifier): T {
     const registration = registrations.get(key)?.get(target);
 
@@ -55,6 +79,16 @@ export function inject<T>(target: DependencyKey<T>, key: string = globalIdentifi
     return instance;
 }
 
+/**
+ * Replaces the specified abstract target class with a concrete implementation
+ * for dependency injection, and updates the singleton instances accordingly.
+ *
+ * @template T the Type of the Service Class to Register
+ * @param {AbstractConstructor<T>} abstractTarget - The abstract class to be replaced.
+ * @param {Constructor<T>} concreteCreator - The concrete implementation to replace the abstract class with.
+ * @param {string} [key=globalIdentifier] - An optional key to identify the dependency, defaults to a global identifier.
+ * @return {void} No return value.
+ */
 export function replaceWith<T>(abstractTarget: AbstractConstructor<T>, concreteCreator: Constructor<T>, key: string = globalIdentifier) {
     ServiceFor(abstractTarget, key)(concreteCreator);
     const instances = singletons.get(key);
