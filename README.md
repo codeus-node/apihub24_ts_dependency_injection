@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/@apihub24%2Fts_dependency_injection.svg?icon=si%3Anpm)](https://badge.fury.io/js/@apihub24%2Fts_dependency_injection)
+
 # Typescript Dependency Injection
 
 This project provides a lightweight and flexible dependency injection (DI) container for TypeScript applications. It simplifies the management of class dependencies, making your code more modular, testable, and maintainable. The container supports transient services, singletons, and constructor-based dependency resolution.
