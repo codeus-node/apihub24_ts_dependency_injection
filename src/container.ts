@@ -91,10 +91,29 @@ export function inject<T>(target: DependencyKey<T>, key: string = globalIdentifi
  */
 export function replaceWith<T>(abstractTarget: AbstractConstructor<T>, concreteCreator: Constructor<T>, key: string = globalIdentifier) {
     ServiceFor(abstractTarget, key)(concreteCreator);
+    destroy(abstractTarget, key);
     const instances = singletons.get(key);
     if (!instances) {
         return;
     }
-    instances.delete(abstractTarget);
     instances.set(abstractTarget, inject(abstractTarget));
+}
+
+/**
+ * Removes the specified target from the collection of instances associated with the given key.
+ *
+ * @template T the Type of the Service Class to Register
+ * @param {DependencyKey<T>} target - The dependency key to be removed from the instances collection.
+ * @param {string} [key=globalIdentifier] - An optional key used to identify the collection of instances. Defaults to a global identifier.
+ * @return {void} Does not return any value.
+ */
+export function destroy<T>(target: DependencyKey<T>, key: string = globalIdentifier) {
+    const instances = singletons.get(key);
+    if (!instances) {
+        return;
+    }
+    instances.delete(target);
+    if (instances.size < 1) {
+        singletons.delete(key);
+    }
 }

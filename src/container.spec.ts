@@ -1,4 +1,4 @@
-import {inject, replaceWith, Service, ServiceFor} from "../src";
+import {destroy, inject, replaceWith, Service, ServiceFor} from "../src";
 
 describe("DependencyInjection Tests", () => {
     abstract class Greeter {
@@ -33,10 +33,16 @@ describe("DependencyInjection Tests", () => {
     }
 
     abstract class SubService {
+        abstract counter: number;
         abstract sub(n1: number, n2: number): number;
+        abstract count();
     }
     @ServiceFor(SubService, "forward")
     class SubForwardService implements SubService {
+        counter = 0;
+        count() {
+            this.counter++;
+        }
         sub(n1: number, n2: number): number {
             return n1 - n2;
         }
@@ -44,18 +50,30 @@ describe("DependencyInjection Tests", () => {
 
     @ServiceFor(SubService, "reverse")
     class SubReverseService implements SubService  {
+        counter = 0;
+        count() {
+            this.counter++;
+        }
         sub(n1: number, n2: number): number {
             return n2 - n1;
         }
     }
 
     class NotRegistered implements SubService {
+        counter = 0;
+        count() {
+            this.counter++;
+        }
         sub(n1: number, n2: number): number {
             return 0;
         }
     }
 
     class RegisteredLater implements SubService {
+        counter = 0;
+        count() {
+            this.counter++;
+        }
         sub(n1: number, n2: number): number {
             return 1;
         }
@@ -92,5 +110,21 @@ describe("DependencyInjection Tests", () => {
         replaceWith(SubService, RegisteredLater, "one");
         const registeredLaterService = inject(SubService, "one");
         expect(registeredLaterService.sub(0,0)).toBe(1);
+    });
+
+    it("should cleanup Scoped Services", () => {
+        const registeredLaterService = inject(SubService, "one");
+        registeredLaterService.count();
+        expect(registeredLaterService.counter).toBe(1);
+        destroy(SubService, "one");
+        const registeredLaterService2 = inject(SubService, "one");
+        expect(registeredLaterService2.counter).toBe(0);
+    });
+
+    it("should replace global Services", () => {
+        const addService = inject(AddService);
+        expect(addService.add(1, 1)).toBe(2);
+        replaceWith(AddService, MockAddService);
+        expect(inject(AddService).add(1, 1)).toBe(5);
     });
 });

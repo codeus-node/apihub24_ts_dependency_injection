@@ -84,17 +84,17 @@ Use Scoped Service
 Pass some string to Scope the Service so you can have Multiple Instances of a Abstract Service
 
 ```ts
-import { ServiceFor, inject } from '@apihub24/ts_dependency_injection';
+import {ServiceFor, inject, destroy} from '@apihub24/ts_dependency_injection';
 
 abstract class AuthService {
-  abstract login(): void;
+    abstract login(): void;
 }
 
 @ServiceFor(AuthService, "1")
 class AuthService1 extends AuthService {
-  login() {
-    console.log("Logging in with basic authentication...");
-  }
+    login() {
+        console.log("Logging in with basic authentication...");
+    }
 }
 
 @ServiceFor(AuthService, "2")
@@ -106,6 +106,10 @@ class AuthService2 extends AuthService {
 
 const authService1 = inject(AuthService, "1");
 const authService2 = inject(AuthService, "2");
+
+// Be sure to Destroy the Instances when not used anymore!!!!
+destroy(AuthService, "1");
+destroy(AuthService, "2");
 ```
 
 2. Constructor Injection
