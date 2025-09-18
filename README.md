@@ -1,4 +1,7 @@
 [![npm version](https://badge.fury.io/js/@apihub24%2Fts_dependency_injection.svg?icon=si%3Anpm)](https://badge.fury.io/js/@apihub24%2Fts_dependency_injection)
+[![License: Apache2.0](https://img.shields.io/badge/License-Apache2.0-green.svg)](https://opensource.org/licenses/Apache2.0)
+[![CI](https://github.com/codeus-node/apihub24_ts_dependency_injection/actions/workflows/ci.yml/badge.svg)](https://github.com/codeus-node/apihub24_ts_dependency_injection/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/codeus-node/apihub24_ts_dependency_injection/branch/main/graph/badge.svg)](https://codecov.io/gh/codeus-node/apihub24_ts_dependency_injection)
 
 # Typescript Dependency Injection
 
