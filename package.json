@@ -1,6 +1,6 @@
 {
   "name": "@apihub24/ts_dependency_injection",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,11 @@
     "ts-jest": "^29.4.1"
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "email": "git@apihub24.de",
+    "name": "Markus Morgenstern",
+    "url": "https://github.com/codeus-node/apihub24_ts_dependency_injection"
+  },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

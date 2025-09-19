@@ -1,24 +1,47 @@
 import "reflect-metadata";
-import {AbstractConstructor, Constructor, DependencyKey, Registration} from "./types";
+import {
+  AbstractConstructor,
+  Constructor,
+  DependencyKey,
+  Registration,
+} from "./types";
 
 const registrations = new Map<string, Map<DependencyKey<any>, Registration>>();
 const singletons = new Map<string, Map<DependencyKey<any>, any>>();
 const globalIdentifier = "#global#";
 
 function registerCreator<T>(
-    abstractTarget: DependencyKey<T>,
-    concreteCreator: Constructor<T>,
-    key: string,
-    isSingleton: boolean
+  abstractTarget: DependencyKey<T>,
+  concreteCreator: Constructor<T>,
+  key: string,
+  isSingleton: boolean
 ) {
-    let creators = registrations.get(key);
-    if (!creators) {
-        creators = new Map();
-        registrations.set(key, creators);
-    }
-    creators.set(abstractTarget, { creator: concreteCreator, isSingleton });
+  let creators = registrations.get(key);
+  if (!creators) {
+    creators = new Map();
+    registrations.set(key, creators);
+  }
+  creators.set(abstractTarget, { creator: concreteCreator, isSingleton });
 }
 
+/**
+ * Parameter decorator to specify a custom DI key for a constructor parameter.
+ * Stores the key in metadata for later resolution during injection.
+ *
+ * @param {string} key The DI context key to use for this parameter.
+ * @returns A decorator function for constructor parameters.
+ */
+export function Inject(key: string) {
+  return function (
+    target: any,
+    _propertyKey: string | symbol | undefined,
+    parameterIndex: number
+  ) {
+    const existingKeys = Reflect.getMetadata("di:keys", target) || {};
+    existingKeys[parameterIndex] = key;
+    Reflect.defineMetadata("di:keys", existingKeys, target);
+  };
+}
 
 /**
  * Service decorator function to register a concrete class for dependency injection.
@@ -28,9 +51,14 @@ function registerCreator<T>(
  * @return {Function} A decorator function that registers a concrete class using the specified key.
  */
 export function Service<T>(key: string = globalIdentifier) {
-    return function (concreteCreator: Constructor<T>) {
-        registerCreator(concreteCreator, concreteCreator, key, key === globalIdentifier);
-    }
+  return function (concreteCreator: Constructor<T>) {
+    registerCreator(
+      concreteCreator,
+      concreteCreator,
+      key,
+      key === globalIdentifier
+    );
+  };
 }
 
 /**
@@ -41,10 +69,18 @@ export function Service<T>(key: string = globalIdentifier) {
  * @param {string} [key=globalIdentifier] - Optional identifier key for the registration. Defaults to a global identifier.
  * @return {Function} A function that associates the abstract type with a concrete class implementation.
  */
-export function ServiceFor<T>(abstractTarget: AbstractConstructor<T>, key: string = globalIdentifier) {
-    return function (concreteCreator: Constructor<T>) {
-        registerCreator(abstractTarget, concreteCreator, key, key === globalIdentifier);
-    }
+export function ServiceFor<T>(
+  abstractTarget: AbstractConstructor<T>,
+  key: string = globalIdentifier
+) {
+  return function (concreteCreator: Constructor<T>) {
+    registerCreator(
+      abstractTarget,
+      concreteCreator,
+      key,
+      key === globalIdentifier
+    );
+  };
 }
 
 /**
@@ -56,27 +92,38 @@ export function ServiceFor<T>(abstractTarget: AbstractConstructor<T>, key: strin
  * @param {string} [key=globalIdentifier] - The identifier for the dependency context. Defaults to `globalIdentifier`.
  * @return {T} An instance of the resolved dependency.
  */
-export function inject<T>(target: DependencyKey<T>, key: string = globalIdentifier): T {
-    const registration = registrations.get(key)?.get(target);
+export function inject<T>(
+  target: DependencyKey<T>,
+  key: string = globalIdentifier
+): T {
+  const registration = registrations.get(key)?.get(target);
 
-    if (!registration) {
-        throw new Error(`Dependency not found for type: ${target.name} in key: ${key}`);
-    }
+  if (!registration) {
+    throw new Error(
+      `Dependency not found for type: ${target.name} in key: ${key}`
+    );
+  }
 
-    let instances = singletons.get(key);
-    if (!instances) {
-        instances = new Map();
-        singletons.set(key, instances);
-    }
-    let instance = instances.get(target);
-    if (!instance) {
-        const constructorParams = Reflect.getMetadata("design:paramtypes", registration.creator) || [];
-        const dependencies = constructorParams.map((param: any) => inject(param, key));
-        instance = new registration.creator(...dependencies);
-        instances.set(target, instance);
-    }
+  let instances = singletons.get(key);
+  if (!instances) {
+    instances = new Map();
+    singletons.set(key, instances);
+  }
+  let instance = instances.get(target);
+  if (!instance) {
+    const constructorParams =
+      Reflect.getMetadata("design:paramtypes", registration.creator) || [];
+    const scopedKeys =
+      Reflect.getMetadata("di:keys", registration.creator) || {};
+    const dependencies = constructorParams.map((param: any, index: number) => {
+      const paramKey = scopedKeys[index] || key;
+      return inject(param, paramKey);
+    });
+    instance = new registration.creator(...dependencies);
+    instances.set(target, instance);
+  }
 
-    return instance;
+  return instance;
 }
 
 /**
@@ -89,14 +136,18 @@ export function inject<T>(target: DependencyKey<T>, key: string = globalIdentifi
  * @param {string} [key=globalIdentifier] - An optional key to identify the dependency, defaults to a global identifier.
  * @return {void} No return value.
  */
-export function replaceWith<T>(abstractTarget: AbstractConstructor<T>, concreteCreator: Constructor<T>, key: string = globalIdentifier) {
-    ServiceFor(abstractTarget, key)(concreteCreator);
-    destroy(abstractTarget, key);
-    const instances = singletons.get(key);
-    if (!instances) {
-        return;
-    }
-    instances.set(abstractTarget, inject(abstractTarget));
+export function replaceWith<T>(
+  abstractTarget: AbstractConstructor<T>,
+  concreteCreator: Constructor<T>,
+  key: string = globalIdentifier
+) {
+  ServiceFor(abstractTarget, key)(concreteCreator);
+  destroy(abstractTarget, key);
+  const instances = singletons.get(key);
+  if (!instances) {
+    return;
+  }
+  instances.set(abstractTarget, inject(abstractTarget));
 }
 
 /**
@@ -107,13 +158,16 @@ export function replaceWith<T>(abstractTarget: AbstractConstructor<T>, concreteC
  * @param {string} [key=globalIdentifier] - An optional key used to identify the collection of instances. Defaults to a global identifier.
  * @return {void} Does not return any value.
  */
-export function destroy<T>(target: DependencyKey<T>, key: string = globalIdentifier) {
-    const instances = singletons.get(key);
-    if (!instances) {
-        return;
-    }
-    instances.delete(target);
-    if (instances.size < 1) {
-        singletons.delete(key);
-    }
+export function destroy<T>(
+  target: DependencyKey<T>,
+  key: string = globalIdentifier
+) {
+  const instances = singletons.get(key);
+  if (!instances) {
+    return;
+  }
+  instances.delete(target);
+  if (instances.size < 1) {
+    singletons.delete(key);
+  }
 }

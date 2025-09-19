@@ -40,15 +40,15 @@ Make sure to enable emitDecoratorMetadata and experimentalDecorators in your tsc
 ## Usage
 
 1. Registering Services
-   
+
    Use the provided decorators to register your classes with the container.
 
-Basic Service
+Basic Service (Singleton)
 
-A transient service creates a new instance every time it's injected.
+A service creates a new instance every time it's injected when the instance not exists.
 
 ```ts
-import { Service, inject } from '@apihub24/ts_dependency_injection';
+import { Service, inject } from "@apihub24/ts_dependency_injection";
 
 // register a Singleton Logger
 @Service()
@@ -67,7 +67,7 @@ Abstraction to Implementation
 Register a concrete implementation for an abstract class or interface. This is a common pattern for writing testable code.
 
 ```ts
-import { ServiceFor, inject } from '@apihub24/ts_dependency_injection';
+import { ServiceFor, inject } from "@apihub24/ts_dependency_injection";
 
 abstract class AuthService {
   abstract login(): void;
@@ -86,27 +86,27 @@ authService.login();
 
 Use Scoped Service
 
-Pass some string to Scope the Service so you can have Multiple Instances of a Abstract Service
+Pass some string to Scope the Service so you can have Multiple Instances of a Abstract Service. This can be used for Service Decorator also.
 
 ```ts
-import {ServiceFor, inject, destroy} from '@apihub24/ts_dependency_injection';
+import { ServiceFor, inject, destroy } from "@apihub24/ts_dependency_injection";
 
 abstract class AuthService {
-    abstract login(): void;
+  abstract login(): void;
 }
 
 @ServiceFor(AuthService, "1")
 class AuthService1 extends AuthService {
-    login() {
-        console.log("Logging in with basic authentication...");
-    }
+  login() {
+    console.log("Logging in with basic authentication...");
+  }
 }
 
 @ServiceFor(AuthService, "2")
 class AuthService2 extends AuthService {
-    login() {
-        console.log("Logging in with basic authentication...");
-    }
+  login() {
+    console.log("Logging in with basic authentication...");
+  }
 }
 
 const authService1 = inject(AuthService, "1");
@@ -118,11 +118,11 @@ destroy(AuthService, "2");
 ```
 
 2. Constructor Injection
-   
+
    The container automatically resolves and provides dependencies to a class's constructor.
 
 ```ts
-import { ServiceFor, inject } from '@apihub24/ts_dependency_injection';
+import { ServiceFor, inject } from "@apihub24/ts_dependency_injection";
 
 @Service()
 class Engine {}
@@ -137,12 +137,56 @@ console.log(car instanceof Car); // true
 console.log(car.engine instanceof Engine); // true
 ```
 
+If you want Inject a scoped Service use the @Inject Decorator.
+
+```ts
+import { ServiceFor, inject } from "@apihub24/ts_dependency_injection";
+
+abstract class Engine {}
+@ServiceFor(Engine, "petrol")
+class PetrolEngine implements Engine {}
+@ServiceFor(Engine, "electro")
+class ElectroEngine implements Engine {}
+
+@Service()
+class ElectroCar {
+  constructor(@Inject("electro") private engine: Engine) {}
+}
+
+@Service()
+class PetrolCar {
+  constructor(@Inject("petrol") private engine: Engine) {}
+}
+
+@Service()
+class HybridCar {
+  constructor(
+    private electroEngine: ElectroEngine,
+    private petrolEngine: PetrolEngine
+  ) {}
+}
+
+const car1 = inject(ElectroCar);
+const car2 = inject(PetrolCar);
+const car3 = inject(HybridCar);
+
+console.log(car1 instanceof ElectroCar); // true
+console.log(car1.engine instanceof ElectroEngine); // true
+
+console.log(car2 instanceof PetrolCar); // true
+console.log(car2.engine instanceof PetrolEngine); // true
+
+console.log(car3 instanceof ElectroCar); // true
+console.log(car3.electroEngine instanceof ElectroEngine); // true
+console.log(car3.petrolEngine instanceof PetrolEngine); // true
+```
+
 3. Testing and Mocking
-   
+
    Use replaceWith to substitute a dependency's implementation for testing purposes.
 
 ```ts
-import { ServiceFor, inject } from '@apihub24/ts_dependency_injection';
+import { ServiceFor, inject } from "@apihub24/ts_dependency_injection";
 
 // Production Service
 abstract class DatabaseService {
