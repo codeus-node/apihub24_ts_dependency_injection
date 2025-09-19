@@ -3,6 +3,7 @@ import {
   AbstractConstructor,
   Constructor,
   DependencyKey,
+  FactoryFunction,
   Registration,
 } from "./types";
 
@@ -12,7 +13,7 @@ const globalIdentifier = "#global#";
 
 function registerCreator<T>(
   abstractTarget: DependencyKey<T>,
-  concreteCreator: Constructor<T>,
+  concreteCreator: Constructor<T> | FactoryFunction<T>,
   key: string,
   isSingleton: boolean
 ) {
@@ -119,7 +120,15 @@ export function inject<T>(
       const paramKey = scopedKeys[index] || key;
       return inject(param, paramKey);
     });
-    instance = new registration.creator(...dependencies);
+
+    if (
+      typeof registration.creator === "function" &&
+      registration.creator.prototype
+    ) {
+      instance = new (registration.creator as Constructor<T>)(...dependencies);
+    } else {
+      instance = (registration.creator as FactoryFunction<T>)(...dependencies);
+    }
     instances.set(target, instance);
   }
 
@@ -132,22 +141,30 @@ export function inject<T>(
  *
  * @template T the Type of the Service Class to Register
  * @param {AbstractConstructor<T>} abstractTarget - The abstract class to be replaced.
- * @param {Constructor<T>} concreteCreator - The concrete implementation to replace the abstract class with.
+ * @param {Constructor<T> | T} concreteCreator - The concrete implementation to replace the abstract class with or an instance.
  * @param {string} [key=globalIdentifier] - An optional key to identify the dependency, defaults to a global identifier.
  * @return {void} No return value.
  */
 export function replaceWith<T>(
   abstractTarget: AbstractConstructor<T>,
-  concreteCreator: Constructor<T>,
+  concreteCreator: Constructor<T> | T,
   key: string = globalIdentifier
 ) {
-  ServiceFor(abstractTarget, key)(concreteCreator);
   destroy(abstractTarget, key);
-  const instances = singletons.get(key);
-  if (!instances) {
-    return;
+  if (typeof concreteCreator !== "function") {
+    registerCreator(abstractTarget, () => concreteCreator, key, true);
+  } else {
+    registerCreator(
+      abstractTarget,
+      concreteCreator as Constructor<T>,
+      key,
+      true
+    );
   }
-  instances.set(abstractTarget, inject(abstractTarget));
+  const instances = singletons.get(key);
+  if (instances) {
+    instances.set(abstractTarget, inject(abstractTarget, key));
+  }
 }
 
 /**

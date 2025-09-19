@@ -10,6 +10,13 @@
 export type Constructor<T> = new (...args: any[]) => T;
 
 /**
+ * Represent a generic Factory Function type.
+ *
+ * @template T The type of the instance created by the constructor.
+ */
+export type FactoryFunction<T> = (...args: any[]) => T;
+
+/**
  * A type alias representing an abstract constructor signature that can be used
  * as a base class or to define abstract class-like behavior in TypeScript.
  *
@@ -43,6 +50,6 @@ export type DependencyKey<T> = AbstractConstructor<T> | Constructor<T>;
  *   be reused (singleton behavior).
  */
 export interface Registration {
-    creator: Constructor<any>;
-    isSingleton: boolean;
+  creator: Constructor<any> | FactoryFunction<any>;
+  isSingleton: boolean;
 }

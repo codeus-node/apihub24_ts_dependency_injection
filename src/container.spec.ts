@@ -6,6 +6,7 @@ import {
   Service,
   ServiceFor,
 } from "../src";
+import { Constructor } from "./types";
 
 describe("DependencyInjection Tests", () => {
   abstract class Greeter {
@@ -158,6 +159,13 @@ describe("DependencyInjection Tests", () => {
     ) {}
   }
 
+  abstract class FakeServiceBase {
+    text?: string;
+  }
+  class FakeService implements FakeServiceBase {
+    text = "fake";
+  }
+
   it("should throw Error when not registered", () => {
     try {
       inject(NotRegistered);
@@ -233,5 +241,12 @@ describe("DependencyInjection Tests", () => {
     expect(hybridCar.fuels).toStrictEqual(["petrol", "electro"]);
     expect(hybridCar.engine1).toBeInstanceOf(PetrolEngine);
     expect(hybridCar.engine2).toBeInstanceOf(ElectroEngine);
+  });
+
+  it("should fake constructor", () => {
+    replaceWith(FakeServiceBase, new FakeService());
+    const fake = inject(FakeServiceBase);
+    expect(fake).toBeDefined();
+    expect(fake.text).toBe("fake");
   });
 });
